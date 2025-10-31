@@ -1,0 +1,14 @@
+
+echo "🛠️  Running ESLint validation..."
+pnpm lint || {
+  echo "❌ ESLint validation failed. Fix the errors and try again."
+  exit 1
+}
+
+echo "🛠️  Running Prettier formatting check..."
+pnpm format || {
+  echo "❌ Prettier formatting issues found. Run 'pnpm format' to fix."
+  exit 1
+}
+
+echo "✅ Validation passed! Ready to commit."
