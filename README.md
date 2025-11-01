@@ -46,27 +46,32 @@ prisma/
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/doTryCatch/currency-info-api.git
 cd currency-info-api
 ```
 
 2. Install dependencies:
+
 ```bash
 pnpm install
 ```
 
 3. Set up your environment variables (create a `.env` file):
+
 ```env
 DATABASE_URL="postgresql://user:password@localhost:5432/currency_info_db"
 ```
 
 4. Run database migrations:
+
 ```bash
 pnpm prisma migrate dev
 ```
 
 5. Start the development server:
+
 ```bash
 pnpm dev
 ```
@@ -76,16 +81,19 @@ pnpm dev
 The API provides the following endpoints:
 
 ### Quotes
+
 - Get currency quotes
 - Historical quote data
 - Real-time exchange rates
 
 ### Average Rates
+
 - Calculate average rates over time periods
 - Moving averages
 - Weighted averages
 
 ### Slippage Analysis
+
 - Calculate price slippage
 - Market impact analysis
 - Trading cost analysis
