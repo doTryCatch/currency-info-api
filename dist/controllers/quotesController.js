@@ -8,7 +8,9 @@ const QuoteController = async (req, res) => {
     try {
         const region = req.query.region;
         if (!req.query.region) {
-            return res.status(400).json({ error: "Region query parameter is required" });
+            return res
+                .status(400)
+                .json({ error: "Region query parameter is required" });
         }
         const result = await quotesServices_1.default.getQuotes(region);
         res.status(200).json(result);
@@ -18,6 +20,7 @@ const QuoteController = async (req, res) => {
             console.error(error.message);
         }
         else {
+            console.error("QuoteController Error:", error);
             console.error("Unexpected error", error);
         }
         res.status(500).json({ error: "Internal Server Error" });

@@ -65,18 +65,25 @@ export class QuoteService {
     const urls = this.endpoints[region];
     const fetched = await Promise.all(
       Object.entries(urls).map(([sourceKey, url]) =>
-        this.fetchOne(url, sourceKey, region),
-      ),
+        this.fetchOne(url, sourceKey, region)
+      )
     );
 
     const valid = fetched.filter(
-      (q): q is QuoteDTO => q.buy_price > 0 && q.sell_price > 0,
+      (q): q is QuoteDTO => q.buy_price > 0 && q.sell_price > 0
     );
 
     if (valid.length) {
       await Promise.all(
-        valid.map((q) =>
-          prisma.quote.upsert({
+        valid.map((q) => {
+          // 🧩 Validate timestamp before saving
+          if (q.timestamp && isNaN(Date.parse(q.timestamp))) {
+            console.warn(
+              `⚠️ Invalid timestamp from ${q.source}: ${q.timestamp}`
+            );
+          }
+
+          return prisma.quote.upsert({
             where: {
               region_source: {
                 region,
@@ -87,7 +94,10 @@ export class QuoteService {
               buy_price: q.buy_price,
               sell_price: q.sell_price,
               spread: q.spread ?? null,
-              timestamp: q.timestamp ? new Date(q.timestamp) : new Date(),
+              timestamp:
+                q.timestamp && !isNaN(Date.parse(q.timestamp))
+                  ? new Date(q.timestamp)
+                  : new Date(),
             },
             create: {
               region,
@@ -95,10 +105,13 @@ export class QuoteService {
               buy_price: q.buy_price,
               sell_price: q.sell_price,
               spread: q.spread ?? null,
-              timestamp: q.timestamp ? new Date(q.timestamp) : new Date(),
+              timestamp:
+                q.timestamp && !isNaN(Date.parse(q.timestamp))
+                  ? new Date(q.timestamp)
+                  : new Date(),
             },
-          }),
-        ),
+          });
+        })
       );
     }
 
@@ -123,7 +136,7 @@ export class QuoteService {
   private async fetchOne(
     url: string,
     sourceKey: string,
-    region: Region,
+    region: Region
   ): Promise<QuoteDTO> {
     try {
       if (url.includes("ambito.com"))
@@ -143,7 +156,7 @@ export class QuoteService {
     } catch (err) {
       console.error(
         `Failed ${sourceKey} (internal: ${url}):`,
-        err instanceof Error ? err.message : err,
+        err instanceof Error ? err.message : err
       );
       return {
         buy_price: 0,
@@ -159,7 +172,7 @@ export class QuoteService {
     sourceKey: string,
     region: Region,
     timestamp?: string,
-    spread?: number,
+    spread?: number
   ): QuoteDTO {
     return {
       buy_price: buy,
@@ -170,10 +183,11 @@ export class QuoteService {
     };
   }
 
+  // ✅ FIXED AMBITO FUNCTION
   private async fetchAmbito(
     url: string,
     sourceKey: string,
-    region: Region,
+    region: Region
   ): Promise<QuoteDTO> {
     interface AmbitoResp {
       compra?: string;
@@ -194,167 +208,135 @@ export class QuoteService {
     const sell = this.cleanPrice(data.venta?.replace("$", ""));
     const spread = buy > 0 ? (sell - buy) / buy : undefined;
 
-    return this.buildQuote(buy, sell, sourceKey, region, data.fecha, spread);
+    // 🧩 Validate & normalize fecha
+    const timestamp =
+      data.fecha && !isNaN(Date.parse(data.fecha))
+        ? data.fecha
+        : new Date().toISOString();
+
+    return this.buildQuote(buy, sell, sourceKey, region, timestamp, spread);
   }
 
-  private async fetchDolarHoy(
-    url: string,
-    sourceKey: string,
-    region: Region,
-  ): Promise<QuoteDTO> {
+  // Other fetchers remain unchanged
+  private async fetchDolarHoy(url: string, sourceKey: string, region: Region) {
     const { data } = await axios.get<string>(url, { timeout: 10_000 });
     const $ = cheerio.load(data);
-
-    let buy = "";
-    let sell = "";
+    let buy = "",
+      sell = "";
     $(".tile.is-parent.is-8 .tile.is-child").each((_i, el) => {
       const topic = $(el).find(".topic").text().trim().toLowerCase();
       const value = $(el).find(".value").text().trim();
       if (topic.includes("compra")) buy = value;
       if (topic.includes("venta")) sell = value;
     });
-
     const buy_price = this.cleanPrice(buy);
     const sell_price = this.cleanPrice(sell);
     const spread =
       buy_price > 0 ? (sell_price - buy_price) / buy_price : undefined;
-
     return this.buildQuote(
       buy_price,
       sell_price,
       sourceKey,
       region,
       undefined,
-      spread,
+      spread
     );
   }
 
-  private async fetchCronista(
-    url: string,
-    sourceKey: string,
-    region: Region,
-  ): Promise<QuoteDTO> {
+  private async fetchCronista(url: string, sourceKey: string, region: Region) {
     const { data } = await axios.get<string>(url, { timeout: 10_000 });
     const $ = cheerio.load(data);
-
     const buyTxt = $("span.buy").text().trim();
     const sellTxt = $("span.sell").text().trim();
-
     const buy_price = this.cleanPrice(buyTxt.split("$")[1]);
     const sell_price = this.cleanPrice(sellTxt.split("$")[1]);
     const spread =
       buy_price > 0 ? (sell_price - buy_price) / buy_price : undefined;
-
     return this.buildQuote(
       buy_price,
       sell_price,
       sourceKey,
       region,
       undefined,
-      spread,
+      spread
     );
   }
 
-  private async fetchWise(
-    url: string,
-    sourceKey: string,
-    region: Region,
-  ): Promise<QuoteDTO> {
+  private async fetchWise(url: string, sourceKey: string, region: Region) {
     interface WiseProvider {
       alias: string;
       quotes?: Array<{ rate?: number }>;
     }
-
     interface WiseResp {
       providers?: WiseProvider[];
     }
-
     const { data }: AxiosResponse<WiseResp> = await axios.get(url, {
       headers: { "User-Agent": "Mozilla/5.0", Accept: "application/json" },
       timeout: 10_000,
     });
-
     const wiseProvider = data.providers?.find((p) => p.alias === "wise");
     const rate = wiseProvider?.quotes?.[0]?.rate;
     if (!rate) throw new Error("Rate not found");
-
     const spread = 0.005;
     const buy_price = rate * (1 - spread);
     const sell_price = rate * (1 + spread);
-
     return this.buildQuote(
       parseFloat(buy_price.toFixed(6)),
       parseFloat(sell_price.toFixed(6)),
       sourceKey,
       region,
       undefined,
-      spread,
+      spread
     );
   }
 
-  private async fetchNubank(
-    url: string,
-    sourceKey: string,
-    region: Region,
-  ): Promise<QuoteDTO> {
+  private async fetchNubank(url: string, sourceKey: string, region: Region) {
     const { data } = await axios.get<string>(url, { timeout: 10_000 });
     const $ = cheerio.load(data);
-
     const valueText = $("tbody tr").first().find("td").eq(1).text().trim();
     const midRate = parseFloat(
-      valueText.replace(/[^\d.,]/g, "").replace(",", "."),
+      valueText.replace(/[^\d.,]/g, "").replace(",", ".")
     );
-
     if (isNaN(midRate))
       return {
         buy_price: 0,
         sell_price: 0,
         source: this.PUBLIC_URLS[region][sourceKey],
       };
-
     const spread = 0.005;
     const buy_price = midRate * (1 - spread);
     const sell_price = midRate * (1 + spread);
-
     return this.buildQuote(
       buy_price,
       sell_price,
       sourceKey,
       region,
       undefined,
-      spread,
+      spread
     );
   }
 
-  private async fetchNomad(
-    url: string,
-    sourceKey: string,
-    region: Region,
-  ): Promise<QuoteDTO> {
+  private async fetchNomad(url: string, sourceKey: string, region: Region) {
     interface NomadResp {
       rate?: number;
       exchange_rate?: number;
     }
-
     const { data }: AxiosResponse<NomadResp> = await axios.get(url, {
       headers: { Accept: "application/json" },
       timeout: 10_000,
     });
-
     const rate = data.rate ?? data.exchange_rate;
     if (!rate) throw new Error("Rate missing");
-
     const spread = 0.01;
     const buy_price = rate * (1 - spread);
     const sell_price = rate * (1 + spread);
-
     return this.buildQuote(
       buy_price,
       sell_price,
       sourceKey,
       region,
       undefined,
-      spread,
+      spread
     );
   }
 

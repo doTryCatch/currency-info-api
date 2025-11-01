@@ -144,7 +144,11 @@ class QuoteService {
         }
         catch (err) {
             console.error(`Failed ${sourceKey} (internal: ${url}):`, err instanceof Error ? err.message : err);
-            return { buy_price: 0, sell_price: 0, source: this.PUBLIC_URLS[region][sourceKey] };
+            return {
+                buy_price: 0,
+                sell_price: 0,
+                source: this.PUBLIC_URLS[region][sourceKey],
+            };
         }
     }
     buildQuote(buy, sell, sourceKey, region, timestamp, spread) {
@@ -217,7 +221,11 @@ class QuoteService {
         const valueText = $("tbody tr").first().find("td").eq(1).text().trim();
         const midRate = parseFloat(valueText.replace(/[^\d.,]/g, "").replace(",", "."));
         if (isNaN(midRate))
-            return { buy_price: 0, sell_price: 0, source: this.PUBLIC_URLS[region][sourceKey] };
+            return {
+                buy_price: 0,
+                sell_price: 0,
+                source: this.PUBLIC_URLS[region][sourceKey],
+            };
         const spread = 0.005;
         const buy_price = midRate * (1 - spread);
         const sell_price = midRate * (1 + spread);
@@ -239,7 +247,7 @@ class QuoteService {
     cleanPrice(str) {
         if (!str)
             return 0;
-        return parseFloat(str.replace(/[$\.]/g, "").replace(",", ".").trim()) || 0;
+        return parseFloat(str.replace(/[$.]/g, "").replace(",", ".").trim()) || 0;
     }
 }
 exports.QuoteService = QuoteService;
