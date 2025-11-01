@@ -5,11 +5,24 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
+
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+// schema.prisma
+model Quote {
+  id        Int      @id @default(autoincrement())
+  region    String
+  source    String
+  buy_price Decimal
+  sell_price Decimal
+  spread    Decimal?
+  timestamp DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@unique([region, source], name: "region_source")
 }
