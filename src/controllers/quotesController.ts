@@ -2,10 +2,11 @@ import { Request, Response } from "express";
 import QuoteServices from "../services/quotesServices";
 const QuoteController = async (req: Request, res: Response) => {
   try {
-
     const region = req.query.region as "ARS" | "BRL";
-     if(!req.query.region){
-      return res.status(400).json({ error: "Region query parameter is required" });
+    if (!req.query.region) {
+      return res
+        .status(400)
+        .json({ error: "Region query parameter is required" });
     }
     const result = await QuoteServices.getQuotes(region);
     res.status(200).json(result);

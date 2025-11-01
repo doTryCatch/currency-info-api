@@ -55,7 +55,8 @@ export class QuoteService {
     });
 
     const now = Date.now();
-    const isFresh = latest && now - latest.createdAt.getTime() < this.CACHE_TTL_MS;
+    const isFresh =
+      latest && now - latest.createdAt.getTime() < this.CACHE_TTL_MS;
 
     if (isFresh) {
       return this.readFromDb(region);
@@ -64,12 +65,12 @@ export class QuoteService {
     const urls = this.endpoints[region];
     const fetched = await Promise.all(
       Object.entries(urls).map(([sourceKey, url]) =>
-        this.fetchOne(url, sourceKey, region)
-      )
+        this.fetchOne(url, sourceKey, region),
+      ),
     );
 
     const valid = fetched.filter(
-      (q): q is QuoteDTO => q.buy_price > 0 && q.sell_price > 0
+      (q): q is QuoteDTO => q.buy_price > 0 && q.sell_price > 0,
     );
 
     if (valid.length) {
@@ -96,8 +97,8 @@ export class QuoteService {
               spread: q.spread ?? null,
               timestamp: q.timestamp ? new Date(q.timestamp) : new Date(),
             },
-          })
-        )
+          }),
+        ),
       );
     }
 
@@ -122,23 +123,33 @@ export class QuoteService {
   private async fetchOne(
     url: string,
     sourceKey: string,
-    region: Region
+    region: Region,
   ): Promise<QuoteDTO> {
     try {
-      if (url.includes("ambito.com")) return await this.fetchAmbito(url, sourceKey, region);
-      if (url.includes("dolarhoy.com")) return await this.fetchDolarHoy(url, sourceKey, region);
-      if (url.includes("cronista.com")) return await this.fetchCronista(url, sourceKey, region);
-      if (url.includes("wise.com")) return await this.fetchWise(url, sourceKey, region);
-      if (url.includes("nubank.com.br")) return await this.fetchNubank(url, sourceKey, region);
-      if (url.includes("nomadglobal.com")) return await this.fetchNomad(url, sourceKey, region);
+      if (url.includes("ambito.com"))
+        return await this.fetchAmbito(url, sourceKey, region);
+      if (url.includes("dolarhoy.com"))
+        return await this.fetchDolarHoy(url, sourceKey, region);
+      if (url.includes("cronista.com"))
+        return await this.fetchCronista(url, sourceKey, region);
+      if (url.includes("wise.com"))
+        return await this.fetchWise(url, sourceKey, region);
+      if (url.includes("nubank.com.br"))
+        return await this.fetchNubank(url, sourceKey, region);
+      if (url.includes("nomadglobal.com"))
+        return await this.fetchNomad(url, sourceKey, region);
 
       throw new Error("Unsupported URL");
     } catch (err) {
       console.error(
         `Failed ${sourceKey} (internal: ${url}):`,
-        err instanceof Error ? err.message : err
+        err instanceof Error ? err.message : err,
       );
-      return { buy_price: 0, sell_price: 0, source: this.PUBLIC_URLS[region][sourceKey] };
+      return {
+        buy_price: 0,
+        sell_price: 0,
+        source: this.PUBLIC_URLS[region][sourceKey],
+      };
     }
   }
 
@@ -148,7 +159,7 @@ export class QuoteService {
     sourceKey: string,
     region: Region,
     timestamp?: string,
-    spread?: number
+    spread?: number,
   ): QuoteDTO {
     return {
       buy_price: buy,
@@ -159,7 +170,11 @@ export class QuoteService {
     };
   }
 
-  private async fetchAmbito(url: string, sourceKey: string, region: Region): Promise<QuoteDTO> {
+  private async fetchAmbito(
+    url: string,
+    sourceKey: string,
+    region: Region,
+  ): Promise<QuoteDTO> {
     interface AmbitoResp {
       compra?: string;
       venta?: string;
@@ -182,7 +197,11 @@ export class QuoteService {
     return this.buildQuote(buy, sell, sourceKey, region, data.fecha, spread);
   }
 
-  private async fetchDolarHoy(url: string, sourceKey: string, region: Region): Promise<QuoteDTO> {
+  private async fetchDolarHoy(
+    url: string,
+    sourceKey: string,
+    region: Region,
+  ): Promise<QuoteDTO> {
     const { data } = await axios.get<string>(url, { timeout: 10_000 });
     const $ = cheerio.load(data);
 
@@ -197,12 +216,24 @@ export class QuoteService {
 
     const buy_price = this.cleanPrice(buy);
     const sell_price = this.cleanPrice(sell);
-    const spread = buy_price > 0 ? (sell_price - buy_price) / buy_price : undefined;
+    const spread =
+      buy_price > 0 ? (sell_price - buy_price) / buy_price : undefined;
 
-    return this.buildQuote(buy_price, sell_price, sourceKey, region, undefined, spread);
+    return this.buildQuote(
+      buy_price,
+      sell_price,
+      sourceKey,
+      region,
+      undefined,
+      spread,
+    );
   }
 
-  private async fetchCronista(url: string, sourceKey: string, region: Region): Promise<QuoteDTO> {
+  private async fetchCronista(
+    url: string,
+    sourceKey: string,
+    region: Region,
+  ): Promise<QuoteDTO> {
     const { data } = await axios.get<string>(url, { timeout: 10_000 });
     const $ = cheerio.load(data);
 
@@ -211,12 +242,24 @@ export class QuoteService {
 
     const buy_price = this.cleanPrice(buyTxt.split("$")[1]);
     const sell_price = this.cleanPrice(sellTxt.split("$")[1]);
-    const spread = buy_price > 0 ? (sell_price - buy_price) / buy_price : undefined;
+    const spread =
+      buy_price > 0 ? (sell_price - buy_price) / buy_price : undefined;
 
-    return this.buildQuote(buy_price, sell_price, sourceKey, region, undefined, spread);
+    return this.buildQuote(
+      buy_price,
+      sell_price,
+      sourceKey,
+      region,
+      undefined,
+      spread,
+    );
   }
 
-  private async fetchWise(url: string, sourceKey: string, region: Region): Promise<QuoteDTO> {
+  private async fetchWise(
+    url: string,
+    sourceKey: string,
+    region: Region,
+  ): Promise<QuoteDTO> {
     interface WiseProvider {
       alias: string;
       quotes?: Array<{ rate?: number }>;
@@ -245,29 +288,49 @@ export class QuoteService {
       sourceKey,
       region,
       undefined,
-      spread
+      spread,
     );
   }
 
-  private async fetchNubank(url: string, sourceKey: string, region: Region): Promise<QuoteDTO> {
+  private async fetchNubank(
+    url: string,
+    sourceKey: string,
+    region: Region,
+  ): Promise<QuoteDTO> {
     const { data } = await axios.get<string>(url, { timeout: 10_000 });
     const $ = cheerio.load(data);
 
     const valueText = $("tbody tr").first().find("td").eq(1).text().trim();
     const midRate = parseFloat(
-      valueText.replace(/[^\d.,]/g, "").replace(",", ".")
+      valueText.replace(/[^\d.,]/g, "").replace(",", "."),
     );
 
-    if (isNaN(midRate)) return { buy_price: 0, sell_price: 0, source: this.PUBLIC_URLS[region][sourceKey] };
+    if (isNaN(midRate))
+      return {
+        buy_price: 0,
+        sell_price: 0,
+        source: this.PUBLIC_URLS[region][sourceKey],
+      };
 
     const spread = 0.005;
     const buy_price = midRate * (1 - spread);
     const sell_price = midRate * (1 + spread);
 
-    return this.buildQuote(buy_price, sell_price, sourceKey, region, undefined, spread);
+    return this.buildQuote(
+      buy_price,
+      sell_price,
+      sourceKey,
+      region,
+      undefined,
+      spread,
+    );
   }
 
-  private async fetchNomad(url: string, sourceKey: string, region: Region): Promise<QuoteDTO> {
+  private async fetchNomad(
+    url: string,
+    sourceKey: string,
+    region: Region,
+  ): Promise<QuoteDTO> {
     interface NomadResp {
       rate?: number;
       exchange_rate?: number;
@@ -285,13 +348,19 @@ export class QuoteService {
     const buy_price = rate * (1 - spread);
     const sell_price = rate * (1 + spread);
 
-    return this.buildQuote(buy_price, sell_price, sourceKey, region, undefined, spread);
+    return this.buildQuote(
+      buy_price,
+      sell_price,
+      sourceKey,
+      region,
+      undefined,
+      spread,
+    );
   }
 
   private cleanPrice(str: string | undefined): number {
     if (!str) return 0;
     return parseFloat(str.replace(/[$.]/g, "").replace(",", ".").trim()) || 0;
-
   }
 }
 

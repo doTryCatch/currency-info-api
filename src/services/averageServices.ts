@@ -10,7 +10,7 @@ export class AverageService {
   async getAverage(region: string): Promise<AverageDTO> {
     const quotes = await QuoteService.getQuotes(region);
     const validQuotes = quotes.filter(
-      (q) => q.buy_price > 0 && q.sell_price > 0
+      (q) => q.buy_price > 0 && q.sell_price > 0,
     );
 
     if (validQuotes.length === 0) {
@@ -23,7 +23,7 @@ export class AverageService {
     return {
       average_buy_price: parseFloat((totalBuy / validQuotes.length).toFixed(2)),
       average_sell_price: parseFloat(
-        (totalSell / validQuotes.length).toFixed(2)
+        (totalSell / validQuotes.length).toFixed(2),
       ),
     };
   }

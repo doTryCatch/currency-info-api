@@ -14,7 +14,7 @@ export class SlippageService {
     const average = await AverageService.getAverage(region);
 
     const validQuotes = quotes.filter(
-      (q) => q.buy_price > 0 && q.sell_price > 0
+      (q) => q.buy_price > 0 && q.sell_price > 0,
     );
 
     if (validQuotes.length === 0) {
@@ -27,14 +27,14 @@ export class SlippageService {
           ((q.buy_price - average.average_buy_price) /
             average.average_buy_price) *
           100
-        ).toFixed(2)
+        ).toFixed(2),
       ),
       sell_price_slippage: parseFloat(
         (
           ((q.sell_price - average.average_sell_price) /
             average.average_sell_price) *
           100
-        ).toFixed(2)
+        ).toFixed(2),
       ),
       source: q.source,
     }));
