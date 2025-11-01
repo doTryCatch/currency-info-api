@@ -78,41 +78,96 @@ pnpm dev
 
 ## API Endpoints
 
+Base URL:
+
+```
+[https://currencyvalue.onrender.com/api](https://currencyvalue.onrender.com/api)
+```
+
+For local development:
+
+```
+http://localhost:3000/api
+```
+
 The API provides the following endpoints:
 
-### Quotes
+### 1. Get Currency Quotes
 
-- Get currency quotes
-- Historical quote data
-- Real-time exchange rates
+```http
+GET /quotes?region={region}
+```
 
-### Average Rates
+Fetches current exchange rates from multiple sources for the specified region.
 
-- Calculate average rates over time periods
-- Moving averages
-- Weighted averages
+**Parameters:**
 
-### Slippage Analysis
+- `region` (required): Currency region code (`ARS` or `BRL`)
 
-- Calculate price slippage
-- Market impact analysis
-- Trading cost analysis
+**Example Response:**
+
+```json
+[
+  {
+    "buy_price": 350.5,
+    "sell_price": 352.5,
+    "source": "https://www.ambito.com/contenidos/dolar.html",
+    "timestamp": "2025-11-02T12:00:00Z",
+    "spread": 0.005
+  }
+]
+```
+
+### 2. Get Average Rates
+
+```http
+GET /average?region={region}
+```
+
+**Parameters:**
+
+- `region` (required): Currency region code (`ARS` or `BRL`)
+
+### 3. Get Slippage Analysis
+
+```http
+GET /slippage?region={region}
+```
+
+**Parameters:**
+
+- `region` (required): Currency region code (`ARS` or `BRL`)
 
 ## Database Schema
 
-The database schema is managed through Prisma and includes tables for storing currency data, historical rates, and market analysis information. See `prisma/schema.prisma` for detailed schema information.
+```prisma
+model Quote {
+  id         Int      @id @default(autoincrement())
+  region     String
+  source     String
+  buy_price  Decimal
+  sell_price Decimal
+  spread     Decimal?
+  timestamp  DateTime @default(now())
+  createdAt  DateTime @default(now())
 
-## Contributing
+  @@unique([region, source], name: "region_source")
+}
+```
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## Data Sources
 
-## License
+### ARS (Argentine Peso)
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+- Ámbito Financiero (ambito.com) | unable to fetch from this url
+- Cronista (cronista.com)
+- Dolar Hoy (dolarhoy.com)
+
+### BRL (Brazilian Real)
+
+- Wise (wise.com)
+- Nubank (nubank.com.br)
+- Nomad (nomadglobal.com) | unable to fetch from this url
 
 ## Author
 
