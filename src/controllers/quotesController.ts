@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import QuoteServices from "../services/quotesServices";
 const QuoteController = (req: Request, res: Response) => {
   try {
-    const result = QuoteServices.getQuotes(req.query.region as string);
+    const result = QuoteServices.getQuotes(req.query.region as "ARS" | "BRL");
     res.status(200).json(result);
   } catch (error: unknown) {
     if (error instanceof Error) {
