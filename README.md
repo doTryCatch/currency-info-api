@@ -81,7 +81,7 @@ pnpm dev
 Base URL:
 
 ```
-[https://currencyvalue.onrender.com/api](https://currencyvalue.onrender.com/api)
+https://currency-info-api.vercel.app/api
 ```
 
 For local development:

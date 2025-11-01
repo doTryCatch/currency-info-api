@@ -65,12 +65,12 @@ export class QuoteService {
     const urls = this.endpoints[region];
     const fetched = await Promise.all(
       Object.entries(urls).map(([sourceKey, url]) =>
-        this.fetchOne(url, sourceKey, region)
-      )
+        this.fetchOne(url, sourceKey, region),
+      ),
     );
 
     const valid = fetched.filter(
-      (q): q is QuoteDTO => q.buy_price > 0 && q.sell_price > 0
+      (q): q is QuoteDTO => q.buy_price > 0 && q.sell_price > 0,
     );
 
     if (valid.length) {
@@ -97,8 +97,8 @@ export class QuoteService {
               spread: q.spread ?? null,
               timestamp: q.timestamp ? new Date(q.timestamp) : new Date(),
             },
-          })
-        )
+          }),
+        ),
       );
     }
 
@@ -123,7 +123,7 @@ export class QuoteService {
   private async fetchOne(
     url: string,
     sourceKey: string,
-    region: Region
+    region: Region,
   ): Promise<QuoteDTO> {
     try {
       if (url.includes("ambito.com"))
@@ -143,7 +143,7 @@ export class QuoteService {
     } catch (err) {
       console.error(
         `Failed ${sourceKey} (internal: ${url}):`,
-        err instanceof Error ? err.message : err
+        err instanceof Error ? err.message : err,
       );
       return {
         buy_price: 0,
@@ -159,7 +159,7 @@ export class QuoteService {
     sourceKey: string,
     region: Region,
     timestamp?: string,
-    spread?: number
+    spread?: number,
   ): QuoteDTO {
     return {
       buy_price: buy,
@@ -173,7 +173,7 @@ export class QuoteService {
   private async fetchAmbito(
     url: string,
     sourceKey: string,
-    region: Region
+    region: Region,
   ): Promise<QuoteDTO> {
     interface AmbitoResp {
       compra?: string;
@@ -200,7 +200,7 @@ export class QuoteService {
   private async fetchDolarHoy(
     url: string,
     sourceKey: string,
-    region: Region
+    region: Region,
   ): Promise<QuoteDTO> {
     const { data } = await axios.get<string>(url, { timeout: 10_000 });
     const $ = cheerio.load(data);
@@ -225,14 +225,14 @@ export class QuoteService {
       sourceKey,
       region,
       undefined,
-      spread
+      spread,
     );
   }
 
   private async fetchCronista(
     url: string,
     sourceKey: string,
-    region: Region
+    region: Region,
   ): Promise<QuoteDTO> {
     const { data } = await axios.get<string>(url, { timeout: 10_000 });
     const $ = cheerio.load(data);
@@ -251,14 +251,14 @@ export class QuoteService {
       sourceKey,
       region,
       undefined,
-      spread
+      spread,
     );
   }
 
   private async fetchWise(
     url: string,
     sourceKey: string,
-    region: Region
+    region: Region,
   ): Promise<QuoteDTO> {
     interface WiseProvider {
       alias: string;
@@ -288,21 +288,21 @@ export class QuoteService {
       sourceKey,
       region,
       undefined,
-      spread
+      spread,
     );
   }
 
   private async fetchNubank(
     url: string,
     sourceKey: string,
-    region: Region
+    region: Region,
   ): Promise<QuoteDTO> {
     const { data } = await axios.get<string>(url, { timeout: 10_000 });
     const $ = cheerio.load(data);
 
     const valueText = $("tbody tr").first().find("td").eq(1).text().trim();
     const midRate = parseFloat(
-      valueText.replace(/[^\d.,]/g, "").replace(",", ".")
+      valueText.replace(/[^\d.,]/g, "").replace(",", "."),
     );
 
     if (isNaN(midRate))
@@ -322,14 +322,14 @@ export class QuoteService {
       sourceKey,
       region,
       undefined,
-      spread
+      spread,
     );
   }
 
   private async fetchNomad(
     url: string,
     sourceKey: string,
-    region: Region
+    region: Region,
   ): Promise<QuoteDTO> {
     interface NomadResp {
       rate?: number;
@@ -354,7 +354,7 @@ export class QuoteService {
       sourceKey,
       region,
       undefined,
-      spread
+      spread,
     );
   }
 
